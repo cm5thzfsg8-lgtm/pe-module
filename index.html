@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>돼지쌤의 수업 설계 (완성형) 🐷</title>
+    <title>체육 모듈수업 </title>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
@@ -31,19 +31,18 @@
         }
         .choice-btn:active { transform: scale(0.98); background: #eee; }
 
-        /* 도움말 상자 스타일 (새로 추가됨) */
+        /* 도움말 상자 */
         #help-box {
             width: 90%; max-width: 450px; margin-top: 20px; padding: 20px;
             background: #fff3cd; border: 2px solid #ffeeba; border-radius: 15px;
             text-align: left; color: #856404; font-family: 'Noto Sans KR', sans-serif;
-            display: none; /* 평소엔 숨김 */
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 50px;
+            display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 50px;
         }
         .help-title { font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; border-bottom: 1px solid #ffeeba; padding-bottom: 5px; display: block;}
         .help-item { margin-bottom: 8px; font-size: 0.95rem; line-height: 1.4; }
         .help-item strong { color: #d35400; }
 
-        /* 결과 화면 스타일 */
+        /* 결과 화면 */
         #result-area { width: 100%; max-width: 600px; text-align: left; animation: fadeIn 0.5s; padding-bottom: 50px;}
         .result-card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); margin-bottom: 20px; }
         .activity-img { width: 100%; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 3px 10px rgba(0,0,0,0.2); display: none; }
@@ -51,12 +50,15 @@
         .result-desc { font-family: 'Noto Sans KR', sans-serif; font-size: 1.1rem; line-height: 1.8; color: #444; white-space: pre-line; background: #f9f9f9; padding: 15px; border-radius: 10px; }
         .summary-box { background: #ecf0f1; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 0.9rem; color: #555; }
 
+        /* 색상 띠 (7단계로 확장) */
         .step-0 { border-color: #E74C3C; } 
-        .step-1 { border-color: #F39C12; }
-        .step-2 { border-color: #F1C40F; }
-        .step-3 { border-color: #2ECC71; }
-        .step-4 { border-color: #3498DB; }
-        .step-5 { border-color: #9B59B6; }
+        .step-1 { border-color: #D35400; } /* 상위움직임 (추가됨) */
+        .step-2 { border-color: #F39C12; }
+        .step-3 { border-color: #F1C40F; }
+        .step-4 { border-color: #2ECC71; }
+        .step-5 { border-color: #3498DB; } /* 지향점 */
+        .step-6 { border-color: #9B59B6; } /* 활동내용 */
+
         .reset-btn { display: block; width: 100%; max-width: 300px; margin: 30px auto; background: #34495e; color: white; padding: 15px; border: none; border-radius: 50px; font-size: 1.2rem; font-family: 'Do Hyeon', sans-serif; cursor: pointer; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -69,17 +71,15 @@
 
     <div id="main-container">
         <h1 id="question-title">수업 내용을 선택하세요</h1>
-        <h2 id="question-subtitle">1단계 / 6단계</h2>
+        <h2 id="question-subtitle">1단계 / 7단계</h2>
         
         <div id="options-area"></div>
-        
         <div id="help-box"></div>
-
         <div id="result-area" style="display:none;"></div>
     </div>
 
     <script>
-        // ⚠️ 변환된 주소 그대로 사용
+        // ⚠️ 주소는 그대로 유지
         const SHEET_URL = "https://docs.google.com/spreadsheets/d/14z7aOVOIIBMjrvn_Legq0ml4qWw7ns5UD6N6EgCuZpY/export?format=csv";
 
         let allData = [];
@@ -87,18 +87,41 @@
         let currentStep = 0;
         let userChoices = [];
 
-        // I열(지향점설명) 추가됨!
-        const headers = ["수업내용", "기본움직임 기술", "움직임요소", "영역통합", "교수학습지향점", "구체적 활동내용", "이미지파일", "상세설명", "지향점설명"];
-        const questions = ["수업 주제는?", "어떤 기술을?", "어떤 요소를?", "어떤 영역과?", "지향점은?", "구체적 활동은?"];
+        // 🛠️ 2번째에 '상위움직임기술' 추가됨 (총 7단계 + 숨겨진 열 3개)
+        // 시트의 B열 제목을 반드시 '상위움직임기술' (띄어쓰기 없이)로 해주세요!
+        const headers = [
+            "수업내용", 
+            "상위움직임기술", 
+            "기본움직임 기술", 
+            "움직임요소", 
+            "영역통합", 
+            "교수학습지향점", 
+            "구체적 활동내용", 
+            "이미지파일", 
+            "상세설명", 
+            "지향점설명"
+        ];
+        
+        // 🛠️ 질문 목록 업데이트
+        const questions = [
+            "수업 주제를 골라주세요", 
+            "기본움직임 기술을 골라주세요.", // 2단계 질문 (요청하신 내용)
+            "움직임 세부 기술을 골라주세요", 
+            "움직임 요소를 골라주세요", 
+            "영역을 골라주세요", 
+            "지향점을 골라주세요", 
+            "구체적 활동은?"
+        ];
 
         Papa.parse(SHEET_URL, {
             download: true,
             header: true,
             complete: function(results) {
+                // 빈 줄 제거
                 allData = results.data.filter(item => item['수업내용'] && item['수업내용'].trim() !== "");
                 initApp();
             },
-            error: function(err) { alert("데이터 로딩 실패! 주소를 확인하세요."); }
+            error: function(err) { alert("데이터 로딩 실패! 시트 주소와 권한을 확인하세요."); }
         });
 
         function initApp() {
@@ -107,7 +130,7 @@
             userChoices = [];
             document.getElementById('options-area').style.display = 'flex';
             document.getElementById('result-area').style.display = 'none';
-            document.getElementById('help-box').style.display = 'none'; // 도움말 숨김
+            document.getElementById('help-box').style.display = 'none';
             renderStep();
         }
 
@@ -124,22 +147,23 @@
                 pathText.innerHTML = userChoices.map(c => `<span class='selected-item'>${c}</span>`).join(" <span class='arrow'>▶</span> ");
             }
 
-            if (currentStep >= 6) { // 6단계(활동내용)까지 마치면 결과
+            // 7단계(구체적 활동)까지 마치면 결과 화면
+            if (currentStep >= 7) { 
                 showResult();
                 return;
             }
 
             title.innerText = questions[currentStep];
-            sub.innerText = `${currentStep + 1}단계 / 6단계`;
+            sub.innerText = `${currentStep + 1}단계 / 7단계`;
             
             area.innerHTML = "";
-            helpBox.style.display = 'none'; // 일단 숨김
+            helpBox.style.display = 'none';
 
             const currentColumnKey = headers[currentStep];
             const options = [...new Set(filteredData.map(item => item[currentColumnKey]))];
 
             if (options.length === 0 || options[0] === undefined) {
-                 area.innerHTML = "<p>데이터가 없습니다. 시트를 확인해주세요.</p><button class='reset-btn' onclick='initApp()'>다시 시작</button>";
+                 area.innerHTML = `<p>데이터가 없습니다. (${currentColumnKey} 열을 확인하세요)</p><button class='reset-btn' onclick='initApp()'>다시 시작</button>`;
                  return;
             }
 
@@ -152,16 +176,13 @@
                 area.appendChild(btn);
             });
 
-            // ⭐ 5단계(지향점)일 때만 도움말 상자 띄우기 (인덱스 4)
-            if (currentStep === 4) {
-                let helpHTML = `<span class="help-title">💡 ${questions[4]} 도움말</span>`;
+            // ⭐ 교수학습지향점 도움말 (이제 6번째 단계이므로 인덱스는 5)
+            if (currentStep === 5) {
+                let helpHTML = `<span class="help-title">💡 ${questions[5]} 도움말</span>`;
                 let hasDescription = false;
 
-                // 현재 화면에 뜬 옵션들의 설명을 찾아서 보여줌
                 options.forEach(opt => {
-                    // 해당 옵션(지향점)을 가진 데이터 중 하나를 찾음
                     const match = filteredData.find(item => item[headers[currentStep]] === opt);
-                    // I열(지향점설명)에 내용이 있으면 추가
                     if (match && match['지향점설명']) {
                         helpHTML += `<div class="help-item"><strong>[${opt}]</strong> ${match['지향점설명']}</div>`;
                         hasDescription = true;
@@ -170,7 +191,7 @@
 
                 if (hasDescription) {
                     helpBox.innerHTML = helpHTML;
-                    helpBox.style.display = 'block'; // 내용이 있을 때만 보임
+                    helpBox.style.display = 'block';
                 }
             }
         }
@@ -187,7 +208,7 @@
             document.getElementById('question-title').innerText = "🎉 수업 설계 완성!";
             document.getElementById('question-subtitle').innerText = "아래 내용을 확인하세요";
             document.getElementById('options-area').style.display = 'none';
-            document.getElementById('help-box').style.display = 'none'; // 결과화면엔 도움말 끔
+            document.getElementById('help-box').style.display = 'none';
             
             const resultArea = document.getElementById('result-area');
             resultArea.style.display = 'block';
@@ -201,13 +222,14 @@
 
             let descHTML = finalData['상세설명'] ? finalData['상세설명'] : "상세 설명이 없습니다.";
 
+            // 6번 인덱스가 마지막 활동명
             resultArea.innerHTML = `
                 <div class="result-card">
-                    <div class="result-title">${userChoices[5]}</div>
+                    <div class="result-title">${userChoices[6]}</div>
                     ${imgHTML}
                     <div class="summary-box">
                         <strong>📌 설계 요약:</strong><br>
-                        ${userChoices.slice(0, 5).join(" > ")}
+                        ${userChoices.slice(0, 6).join(" > ")}
                     </div>
                     <div class="result-desc">${descHTML}</div>
                 </div>
