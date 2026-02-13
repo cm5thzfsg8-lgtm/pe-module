@@ -10,19 +10,16 @@
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #fdf6e3; color: #333; font-family: 'Do Hyeon', sans-serif; }
         
-        /* 상단 진행 바 */
         #status-bar { padding: 15px; background: #2c3e50; color: white; font-size: 1rem; height: 50px; display: flex; align-items: center; white-space: nowrap; overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         .selected-item { color: #f1c40f; font-weight: bold; }
         .arrow { margin: 0 8px; color: #95a5a6; font-size: 0.8rem; }
 
-        /* 메인 컨테이너 */
         #main-container { height: calc(100% - 80px); display: flex; flex-direction: column; align-items: center; padding: 20px; text-align: center; overflow-y: auto; }
         
         h1 { font-family: 'Black Han Sans', sans-serif; font-size: 1.8rem; margin: 10px 0; color: #2c3e50; }
         h2 { font-size: 1.1rem; color: #7f8c8d; margin-bottom: 20px; font-weight: normal; }
 
-        /* 선택 버튼 영역 */
-        #options-area { width: 100%; display: flex; flex-direction: column; align-items: center; padding-bottom: 50px;}
+        #options-area { width: 100%; display: flex; flex-direction: column; align-items: center; padding-bottom: 20px;}
         
         .choice-btn { 
             width: 100%; max-width: 450px; padding: 18px; margin: 6px 0; 
@@ -34,29 +31,33 @@
         }
         .choice-btn:active { transform: scale(0.98); background: #eee; }
 
+        /* 도움말 상자 스타일 (새로 추가됨) */
+        #help-box {
+            width: 90%; max-width: 450px; margin-top: 20px; padding: 20px;
+            background: #fff3cd; border: 2px solid #ffeeba; border-radius: 15px;
+            text-align: left; color: #856404; font-family: 'Noto Sans KR', sans-serif;
+            display: none; /* 평소엔 숨김 */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 50px;
+        }
+        .help-title { font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; border-bottom: 1px solid #ffeeba; padding-bottom: 5px; display: block;}
+        .help-item { margin-bottom: 8px; font-size: 0.95rem; line-height: 1.4; }
+        .help-item strong { color: #d35400; }
+
         /* 결과 화면 스타일 */
         #result-area { width: 100%; max-width: 600px; text-align: left; animation: fadeIn 0.5s; padding-bottom: 50px;}
         .result-card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); margin-bottom: 20px; }
-        
-        /* 이미지 스타일 */
-        .activity-img { width: 100%; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 3px 10px rgba(0,0,0,0.2); display: none; } /* 이미지가 없으면 숨김 */
-        
+        .activity-img { width: 100%; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 3px 10px rgba(0,0,0,0.2); display: none; }
         .result-title { font-family: 'Black Han Sans', sans-serif; font-size: 2rem; color: #e74c3c; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         .result-desc { font-family: 'Noto Sans KR', sans-serif; font-size: 1.1rem; line-height: 1.8; color: #444; white-space: pre-line; background: #f9f9f9; padding: 15px; border-radius: 10px; }
-
         .summary-box { background: #ecf0f1; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 0.9rem; color: #555; }
 
-        /* 버튼 색상 띠 */
         .step-0 { border-color: #E74C3C; } 
         .step-1 { border-color: #F39C12; }
         .step-2 { border-color: #F1C40F; }
         .step-3 { border-color: #2ECC71; }
         .step-4 { border-color: #3498DB; }
         .step-5 { border-color: #9B59B6; }
-
-        /* 처음으로 버튼 */
         .reset-btn { display: block; width: 100%; max-width: 300px; margin: 30px auto; background: #34495e; color: white; padding: 15px; border: none; border-radius: 50px; font-size: 1.2rem; font-family: 'Do Hyeon', sans-serif; cursor: pointer; }
-
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -71,11 +72,14 @@
         <h2 id="question-subtitle">1단계 / 6단계</h2>
         
         <div id="options-area"></div>
+        
+        <div id="help-box"></div>
+
         <div id="result-area" style="display:none;"></div>
     </div>
 
     <script>
-        // ⚠️ 선생님의 구글 시트 주소 (변환 완료!)
+        // ⚠️ 변환된 주소 그대로 사용
         const SHEET_URL = "https://docs.google.com/spreadsheets/d/14z7aOVOIIBMjrvn_Legq0ml4qWw7ns5UD6N6EgCuZpY/export?format=csv";
 
         let allData = [];
@@ -83,26 +87,18 @@
         let currentStep = 0;
         let userChoices = [];
 
-        // 헤더 이름 (시트의 1행과 정확히 같아야 함)
-        const headers = ["수업내용", "기본움직임 기술", "움직임요소", "영역통합", "교수학습지향점", "구체적 활동내용"];
-        
-        // 질문 목록
+        // I열(지향점설명) 추가됨!
+        const headers = ["수업내용", "기본움직임 기술", "움직임요소", "영역통합", "교수학습지향점", "구체적 활동내용", "이미지파일", "상세설명", "지향점설명"];
         const questions = ["수업 주제는?", "어떤 기술을?", "어떤 요소를?", "어떤 영역과?", "지향점은?", "구체적 활동은?"];
 
-        // 1. 데이터 불러오기
         Papa.parse(SHEET_URL, {
             download: true,
             header: true,
             complete: function(results) {
-                // 데이터가 잘 들어왔는지 확인
-                console.log("불러온 데이터:", results.data);
-                
                 allData = results.data.filter(item => item['수업내용'] && item['수업내용'].trim() !== "");
                 initApp();
             },
-            error: function(err) {
-                alert("데이터를 불러오지 못했습니다. 시트 공유 설정이 '링크가 있는 모든 사용자'로 되어있는지 확인해주세요!");
-            }
+            error: function(err) { alert("데이터 로딩 실패! 주소를 확인하세요."); }
         });
 
         function initApp() {
@@ -111,6 +107,7 @@
             userChoices = [];
             document.getElementById('options-area').style.display = 'flex';
             document.getElementById('result-area').style.display = 'none';
+            document.getElementById('help-box').style.display = 'none'; // 도움말 숨김
             renderStep();
         }
 
@@ -118,31 +115,31 @@
             const title = document.getElementById('question-title');
             const sub = document.getElementById('question-subtitle');
             const area = document.getElementById('options-area');
+            const helpBox = document.getElementById('help-box');
             const pathText = document.getElementById('path-text');
 
-            // 상단 경로 표시
             if (userChoices.length === 0) {
                 pathText.innerText = "수업 설계 대기 중...";
             } else {
                 pathText.innerHTML = userChoices.map(c => `<span class='selected-item'>${c}</span>`).join(" <span class='arrow'>▶</span> ");
             }
 
-            // 마지막 단계 선택 완료 시 결과 화면
-            if (currentStep >= headers.length) {
+            if (currentStep >= 6) { // 6단계(활동내용)까지 마치면 결과
                 showResult();
                 return;
             }
 
             title.innerText = questions[currentStep];
-            sub.innerText = `${currentStep + 1}단계 / ${headers.length}단계`;
+            sub.innerText = `${currentStep + 1}단계 / 6단계`;
             
             area.innerHTML = "";
+            helpBox.style.display = 'none'; // 일단 숨김
+
             const currentColumnKey = headers[currentStep];
-            // 현재 단계에 맞는 데이터만 필터링해서 버튼 생성 (중복 제거)
             const options = [...new Set(filteredData.map(item => item[currentColumnKey]))];
 
             if (options.length === 0 || options[0] === undefined) {
-                 area.innerHTML = "<p>해당하는 데이터가 없습니다. 시트를 확인해주세요.</p><button class='reset-btn' onclick='initApp()'>다시 시작</button>";
+                 area.innerHTML = "<p>데이터가 없습니다. 시트를 확인해주세요.</p><button class='reset-btn' onclick='initApp()'>다시 시작</button>";
                  return;
             }
 
@@ -154,6 +151,28 @@
                 btn.onclick = () => selectOption(opt);
                 area.appendChild(btn);
             });
+
+            // ⭐ 5단계(지향점)일 때만 도움말 상자 띄우기 (인덱스 4)
+            if (currentStep === 4) {
+                let helpHTML = `<span class="help-title">💡 ${questions[4]} 도움말</span>`;
+                let hasDescription = false;
+
+                // 현재 화면에 뜬 옵션들의 설명을 찾아서 보여줌
+                options.forEach(opt => {
+                    // 해당 옵션(지향점)을 가진 데이터 중 하나를 찾음
+                    const match = filteredData.find(item => item[headers[currentStep]] === opt);
+                    // I열(지향점설명)에 내용이 있으면 추가
+                    if (match && match['지향점설명']) {
+                        helpHTML += `<div class="help-item"><strong>[${opt}]</strong> ${match['지향점설명']}</div>`;
+                        hasDescription = true;
+                    }
+                });
+
+                if (hasDescription) {
+                    helpBox.innerHTML = helpHTML;
+                    helpBox.style.display = 'block'; // 내용이 있을 때만 보임
+                }
+            }
         }
 
         function selectOption(choice) {
@@ -164,37 +183,33 @@
             renderStep();
         }
 
-        // ⭐ 결과 화면 (사진 + 설명) 보여주기
         function showResult() {
             document.getElementById('question-title').innerText = "🎉 수업 설계 완성!";
             document.getElementById('question-subtitle').innerText = "아래 내용을 확인하세요";
             document.getElementById('options-area').style.display = 'none';
+            document.getElementById('help-box').style.display = 'none'; // 결과화면엔 도움말 끔
             
             const resultArea = document.getElementById('result-area');
             resultArea.style.display = 'block';
 
-            // 최종 선택된 데이터 1줄 가져오기
             const finalData = filteredData[0]; 
 
-            // 이미지 파일명이 있는지 확인
             let imgHTML = "";
             if (finalData['이미지파일']) {
                 imgHTML = `<img src="${finalData['이미지파일']}" class="activity-img" style="display:block;" alt="활동 이미지">`;
             }
 
-            // 상세 설명이 있는지 확인
             let descHTML = finalData['상세설명'] ? finalData['상세설명'] : "상세 설명이 없습니다.";
 
             resultArea.innerHTML = `
                 <div class="result-card">
-                    <div class="result-title">${userChoices[5]}</div> ${imgHTML} <div class="summary-box">
+                    <div class="result-title">${userChoices[5]}</div>
+                    ${imgHTML}
+                    <div class="summary-box">
                         <strong>📌 설계 요약:</strong><br>
                         ${userChoices.slice(0, 5).join(" > ")}
                     </div>
-
-                    <div class="result-desc">
-                        ${descHTML}
-                    </div>
+                    <div class="result-desc">${descHTML}</div>
                 </div>
                 <button class="reset-btn" onclick="initApp()">🔄 처음부터 다시하기</button>
             `;
